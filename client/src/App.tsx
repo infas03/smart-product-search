@@ -1,9 +1,9 @@
+import SearchPage from "./pages/SearchPage";
+
 function App() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <h1 className="text-2xl font-bold text-center pt-10">
-        Smart Product Search
-      </h1>
+      <SearchPage />
     </div>
   );
 }
