@@ -3,6 +3,7 @@ import cors from "cors";
 import environment from "./config/environment.js";
 import { connectDatabase } from "./config/database.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import searchRouter from "./routes/search.routes.js";
 
 const app = express();
 
@@ -12,6 +13,8 @@ app.use(express.json());
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+app.use("/api/search", searchRouter);
 
 app.use(errorHandler);
 

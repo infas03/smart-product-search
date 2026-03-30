@@ -27,5 +27,5 @@ export async function findByTextSearch(query: string): Promise<TextSearchResult[
 }
 
 export async function findAllProducts(): Promise<Product[]> {
-  return ProductModel.find({}, { _id: 0 }).lean<Product[]>();
+  return ProductModel.find({}, { _id: 0, __v: 0 }).lean<Product[]>();
 }
