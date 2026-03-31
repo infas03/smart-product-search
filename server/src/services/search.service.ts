@@ -4,8 +4,11 @@ import type {
   CategoryGroup,
   MegaMenuResponse,
 } from "../types/product.types.js";
-import { findByTextSearch, findAllProducts } from "../repositories/product.repository.js";
+import { findByTextSearch, findByTrigrams } from "../repositories/product.repository.js";
+import { generateTrigrams } from "../utils/trigram.utils.js";
+import { normalizeText } from "../utils/text.utils.js";
 import { findProductsWithTypoTolerance } from "./typo-tolerance.service.js";
+import { getCached, setCached } from "./search-cache.service.js";
 import { calculateProductScore, sortByScore } from "./ranking.service.js";
 
 const TOP_RESULTS_COUNT = 4;
@@ -54,13 +57,19 @@ function buildCategoryGroups(
 }
 
 export async function searchProducts(query: string): Promise<MegaMenuResponse> {
-  const [textSearchResults, allProducts] = await Promise.all([
+  const cacheKey = normalizeText(query);
+  const cached = getCached<MegaMenuResponse>(cacheKey);
+  if (cached) return cached;
+
+  const queryTrigrams = generateTrigrams(query);
+
+  const [textSearchResults, trigramCandidates] = await Promise.all([
     findByTextSearch(query),
-    findAllProducts(),
+    queryTrigrams.length > 0 ? findByTrigrams(queryTrigrams) : Promise.resolve([]),
   ]);
 
   const scoredFromTextSearch = processTextSearchResults(textSearchResults);
-  const scoredFromTypoTolerance = processTypoTolerantResults(query, allProducts);
+  const scoredFromTypoTolerance = processTypoTolerantResults(query, trigramCandidates);
 
   const mergedResults = sortByScore(
     removeDuplicateProducts([...scoredFromTextSearch, ...scoredFromTypoTolerance])
@@ -70,12 +79,15 @@ export async function searchProducts(query: string): Promise<MegaMenuResponse> {
   const topResultIds = new Set(topResults.map((product) => product.id));
   const categoryGroups = buildCategoryGroups(mergedResults, topResultIds);
 
-  return {
+  const response: MegaMenuResponse = {
     query,
     topResults,
     categoryGroups,
     totalResults: mergedResults.length,
   };
+
+  setCached(cacheKey, response);
+  return response;
 }
 
 function processTextSearchResults(

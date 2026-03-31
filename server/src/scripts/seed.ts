@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import dotenv from "dotenv";
+import { generateProductTrigrams } from "../utils/trigram.utils.js";
 
 dotenv.config({ path: resolve(__dirname, "../../.env") });
 
@@ -22,6 +23,7 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     stock: { type: Number, required: true },
     rating: { type: Number, required: true },
+    trigrams: { type: [String], default: [] },
   },
   { collection: "products" }
 );
@@ -41,8 +43,13 @@ async function seed(): Promise<void> {
   const rawData = readFileSync(filePath, "utf-8");
   const products = JSON.parse(rawData);
 
-  await Product.insertMany(products);
-  console.log(`Seeded ${products.length} products`);
+  const productsWithTrigrams = products.map((p: any) => ({
+    ...p,
+    trigrams: generateProductTrigrams(p.name, p.tags),
+  }));
+
+  await Product.insertMany(productsWithTrigrams);
+  console.log(`Seeded ${productsWithTrigrams.length} products with trigrams`);
 
   await Product.collection.createIndex(
     { name: "text", description: "text", tags: "text" },
@@ -52,6 +59,9 @@ async function seed(): Promise<void> {
 
   await Product.collection.createIndex({ category: 1 }, { name: "category_index" });
   console.log("Created category index");
+
+  await Product.collection.createIndex({ trigrams: 1 }, { name: "trigram_index" });
+  console.log("Created trigram index");
 
   await mongoose.disconnect();
   console.log("Seed completed successfully");

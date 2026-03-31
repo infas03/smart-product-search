@@ -1,7 +1,11 @@
 import mongoose, { Schema } from "mongoose";
 import { PRODUCT_CATEGORIES, type Product } from "../types/product.types.js";
 
-export type ProductDocument = Product & mongoose.Document;
+interface ProductSchemaFields extends Product {
+  trigrams: string[];
+}
+
+export type ProductDocument = ProductSchemaFields & mongoose.Document;
 
 const productSchema = new Schema<ProductDocument>(
   {
@@ -17,6 +21,7 @@ const productSchema = new Schema<ProductDocument>(
     price: { type: Number, required: true },
     stock: { type: Number, required: true },
     rating: { type: Number, required: true },
+    trigrams: { type: [String], default: [] },
   },
   {
     collection: "products",
@@ -30,6 +35,8 @@ productSchema.index(
 );
 
 productSchema.index({ category: 1 }, { name: "category_index" });
+
+productSchema.index({ trigrams: 1 }, { name: "trigram_index" });
 
 const ProductModel = mongoose.model<ProductDocument>("Product", productSchema);
 

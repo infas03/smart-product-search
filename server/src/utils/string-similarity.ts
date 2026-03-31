@@ -31,8 +31,14 @@ export function countEditsRequired(firstWord: string, secondWord: string): numbe
 }
 
 export function calculateSimilarity(firstWord: string, secondWord: string): number {
-  const edits = countEditsRequired(firstWord, secondWord);
   const longerLength = Math.max(firstWord.length, secondWord.length);
   if (longerLength === 0) return 1;
+
+  if (secondWord.startsWith(firstWord) || firstWord.startsWith(secondWord)) {
+    const prefixLength = Math.min(firstWord.length, secondWord.length);
+    return 0.5 + 0.5 * (prefixLength / longerLength);
+  }
+
+  const edits = countEditsRequired(firstWord, secondWord);
   return 1 - edits / longerLength;
 }
