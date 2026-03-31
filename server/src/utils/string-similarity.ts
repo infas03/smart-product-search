@@ -1,3 +1,5 @@
+import { metaphone } from "./phonetic.utils.js";
+
 export function countEditsRequired(firstWord: string, secondWord: string): number {
   const firstLength = firstWord.length;
   const secondLength = secondWord.length;
@@ -38,6 +40,10 @@ export function calculateSimilarity(firstWord: string, secondWord: string): numb
     const prefixLength = Math.min(firstWord.length, secondWord.length);
     return 0.5 + 0.5 * (prefixLength / longerLength);
   }
+
+  const code1 = metaphone(firstWord);
+  const code2 = metaphone(secondWord);
+  if (code1.length > 0 && code1 === code2) return 0.9;
 
   const edits = countEditsRequired(firstWord, secondWord);
   return 1 - edits / longerLength;
