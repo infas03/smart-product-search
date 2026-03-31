@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { PRODUCT_CATEGORIES, type Product } from "../types/product.types.js";
+import { generateProductTrigrams } from "../utils/trigram.utils.js";
 
 interface ProductSchemaFields extends Product {
   trigrams: string[];
@@ -28,6 +29,13 @@ const productSchema = new Schema<ProductDocument>(
     versionKey: false,
   }
 );
+
+productSchema.pre("save", function (next) {
+  if (this.isModified("name") || this.isModified("tags")) {
+    this.trigrams = generateProductTrigrams(this.name, this.tags);
+  }
+  next();
+});
 
 productSchema.index(
   { name: "text", description: "text", tags: "text" },
